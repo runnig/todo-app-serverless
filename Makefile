@@ -1,4 +1,4 @@
-.PHONY: help dev build lint format format-check test test-unit test-integration test-watch test-integration-full db-start db-stop db-reset db-seed db-migrate db-push db-studio supabase-init setup clean install
+.PHONY: help dev build lint lint-fast format format-check test test-unit test-integration test-watch test-integration-full db-start db-stop db-reset db-seed db-migrate db-push db-studio supabase-init setup clean install
 
 DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
@@ -29,7 +29,10 @@ test-watch: ## Run tests in watch mode
 # --- Code Quality ---
 
 lint: ## Run ESLint
-	npx eslint
+	npx eslint --cache
+
+lint-fast: ## Run Oxlint for a fast lint pass
+	npm run lint:fast
 
 format: ## Format code with Prettier
 	npx prettier --write "src/**/*.{ts,tsx}" "tests/**/*.{ts,tsx}"
