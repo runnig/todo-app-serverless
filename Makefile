@@ -29,7 +29,7 @@ test-watch: ## Run tests in watch mode
 # --- Code Quality ---
 
 lint: ## Run ESLint
-	npx eslint --cache
+	npx eslint
 
 lint-fast: ## Run Oxlint for a fast lint pass
 	npm run lint:fast
