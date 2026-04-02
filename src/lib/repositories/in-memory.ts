@@ -35,7 +35,7 @@ export class InMemoryTodoRepository implements TodoRepository {
   async update(
     id: string,
     userId: string,
-    data: UpdateTodoInput
+    data: UpdateTodoInput,
   ): Promise<Todo | null> {
     const existing = this.todos.get(id);
     if (!existing || existing.userId !== userId) return null;
@@ -43,7 +43,7 @@ export class InMemoryTodoRepository implements TodoRepository {
     const updated: Todo = {
       ...existing,
       ...Object.fromEntries(
-        Object.entries(data).filter(([_, v]) => v !== undefined)
+        Object.entries(data).filter(([, v]) => v !== undefined),
       ),
       updatedAt: new Date(),
     };

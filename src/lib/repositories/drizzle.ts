@@ -37,7 +37,7 @@ export class DrizzleTodoRepository implements TodoRepository {
   async update(
     id: string,
     userId: string,
-    data: UpdateTodoInput
+    data: UpdateTodoInput,
   ): Promise<Todo | null> {
     const existing = await this.findById(id, userId);
     if (!existing) return null;

@@ -18,7 +18,7 @@ export async function GET(): Promise<
         data: null,
         error: { code: "UNAUTHORIZED", message: "Not authenticated" },
       },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -32,7 +32,7 @@ export async function GET(): Promise<
 }
 
 export async function POST(
-  request: NextRequest
+  request: NextRequest,
 ): Promise<NextResponse<ApiResponse<TodoResponse>>> {
   const supabase = await createClient();
   const {
@@ -45,7 +45,7 @@ export async function POST(
         data: null,
         error: { code: "UNAUTHORIZED", message: "Not authenticated" },
       },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -58,10 +58,12 @@ export async function POST(
         data: null,
         error: {
           code: "VALIDATION_ERROR",
-          message: parsed.error.issues.map((i: { message: string }) => i.message).join(", "),
+          message: parsed.error.issues
+            .map((i: { message: string }) => i.message)
+            .join(", "),
         },
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -70,6 +72,6 @@ export async function POST(
 
   return NextResponse.json(
     { data: toTodoResponse(todo), error: null },
-    { status: 201 }
+    { status: 201 },
   );
 }

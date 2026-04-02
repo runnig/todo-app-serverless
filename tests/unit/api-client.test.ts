@@ -107,9 +107,7 @@ describe("apiClient", () => {
         }),
       });
 
-      await expect(
-        apiClient.createTodo({ title: "" })
-      ).rejects.toMatchObject({
+      await expect(apiClient.createTodo({ title: "" })).rejects.toMatchObject({
         code: "VALIDATION_ERROR",
       });
     });
@@ -176,9 +174,7 @@ describe("apiClient", () => {
         }),
       });
 
-      await expect(
-        apiClient.deleteTodo("nonexistent")
-      ).rejects.toMatchObject({
+      await expect(apiClient.deleteTodo("nonexistent")).rejects.toMatchObject({
         code: "NOT_FOUND",
         status: 404,
       });

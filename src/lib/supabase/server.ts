@@ -14,10 +14,10 @@ export async function createClient() {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
+            cookieStore.set(name, value, options),
           );
         },
       },
-    }
+    },
   );
 }

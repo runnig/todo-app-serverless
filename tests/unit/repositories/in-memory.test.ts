@@ -95,7 +95,7 @@ describe("InMemoryTodoRepository", () => {
       expect(updated).not.toBeNull();
       expect(updated!.title).toBe("Updated");
       expect(updated!.updatedAt.getTime()).toBeGreaterThanOrEqual(
-        created.updatedAt.getTime()
+        created.updatedAt.getTime(),
       );
     });
 

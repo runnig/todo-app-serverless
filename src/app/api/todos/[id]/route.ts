@@ -8,7 +8,7 @@ type TodoResponseSingle = ApiResponse<TodoResponse>;
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse<TodoResponseSingle>> {
   const supabase = await createClient();
   const {
@@ -21,7 +21,7 @@ export async function PATCH(
         data: null,
         error: { code: "UNAUTHORIZED", message: "Not authenticated" },
       },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -35,10 +35,12 @@ export async function PATCH(
         data: null,
         error: {
           code: "VALIDATION_ERROR",
-          message: parsed.error.issues.map((i: { message: string }) => i.message).join(", "),
+          message: parsed.error.issues
+            .map((i: { message: string }) => i.message)
+            .join(", "),
         },
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -51,7 +53,7 @@ export async function PATCH(
         data: null,
         error: { code: "NOT_FOUND", message: "Todo not found" },
       },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -60,7 +62,7 @@ export async function PATCH(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse<TodoResponseSingle>> {
   const supabase = await createClient();
   const {
@@ -73,7 +75,7 @@ export async function DELETE(
         data: null,
         error: { code: "UNAUTHORIZED", message: "Not authenticated" },
       },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -87,7 +89,7 @@ export async function DELETE(
         data: null,
         error: { code: "NOT_FOUND", message: "Todo not found" },
       },
-      { status: 404 }
+      { status: 404 },
     );
   }
 

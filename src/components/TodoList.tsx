@@ -73,7 +73,12 @@ export function TodoList() {
             {f.charAt(0).toUpperCase() + f.slice(1)}
             {f !== "all" && (
               <span className="ml-1 text-xs">
-                ({todos.filter((t) => (f === "active" ? !t.done : t.done)).length})
+                (
+                {
+                  todos.filter((t) => (f === "active" ? !t.done : t.done))
+                    .length
+                }
+                )
               </span>
             )}
           </Button>

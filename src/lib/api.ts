@@ -1,14 +1,11 @@
-import type {
-  ApiResponse,
-  TodoResponse,
-} from "./types";
+import type { ApiResponse, TodoResponse } from "./types";
 import type { CreateTodoInput, UpdateTodoInput } from "./schemas";
 
 class ApiClientError extends Error {
   constructor(
     public code: string,
     public status: number,
-    message: string
+    message: string,
   ) {
     super(message);
     this.name = "ApiClientError";
