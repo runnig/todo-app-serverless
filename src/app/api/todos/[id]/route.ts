@@ -1,109 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getTodoRepository } from "@/lib/repositories";
-import { updateTodoSchema } from "@/lib/schemas";
-import { ApiResponse, TodoResponse, toTodoResponse } from "@/lib/types";
+import { ApiResponse, TodoResponse } from "@/lib/types";
+import { handlePatch, handleDelete } from "@/lib/handlers/todo-by-id";
 
-type TodoResponseSingle = ApiResponse<TodoResponse>;
+function makeDeps() {
+  return {
+    getAuthUser: async () => {
+      const supabase = await createClient();
+      const { data } = await supabase.auth.getUser();
+      return data.user?.id ? { id: data.user.id } : null;
+    },
+    repo: getTodoRepository(),
+  };
+}
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
-): Promise<NextResponse<TodoResponseSingle>> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json(
-      {
-        data: null,
-        error: { code: "UNAUTHORIZED", message: "Not authenticated" },
-      },
-      { status: 401 },
-    );
-  }
-
-  const { id } = await params;
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      {
-        data: null,
-        error: { code: "VALIDATION_ERROR", message: "Invalid JSON body" },
-      },
-      { status: 400 },
-    );
-  }
-
-  const parsed = updateTodoSchema.safeParse(body);
-
-  if (!parsed.success) {
-    return NextResponse.json(
-      {
-        data: null,
-        error: {
-          code: "VALIDATION_ERROR",
-          message: parsed.error.issues
-            .map((i: { message: string }) => i.message)
-            .join(", "),
-        },
-      },
-      { status: 400 },
-    );
-  }
-
-  const repo = getTodoRepository();
-  const updated = await repo.update(id, user.id, parsed.data);
-
-  if (!updated) {
-    return NextResponse.json(
-      {
-        data: null,
-        error: { code: "NOT_FOUND", message: "Todo not found" },
-      },
-      { status: 404 },
-    );
-  }
-
-  return NextResponse.json({ data: toTodoResponse(updated), error: null });
+): Promise<NextResponse<ApiResponse<TodoResponse>>> {
+  return handlePatch(makeDeps(), request, { params });
 }
 
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
-): Promise<NextResponse<TodoResponseSingle>> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json(
-      {
-        data: null,
-        error: { code: "UNAUTHORIZED", message: "Not authenticated" },
-      },
-      { status: 401 },
-    );
-  }
-
-  const { id } = await params;
-  const repo = getTodoRepository();
-  const deleted = await repo.delete(id, user.id);
-
-  if (!deleted) {
-    return NextResponse.json(
-      {
-        data: null,
-        error: { code: "NOT_FOUND", message: "Todo not found" },
-      },
-      { status: 404 },
-    );
-  }
-
-  return NextResponse.json({ data: toTodoResponse(deleted), error: null });
+): Promise<NextResponse<ApiResponse<TodoResponse>>> {
+  return handleDelete(makeDeps(), _request, { params });
 }

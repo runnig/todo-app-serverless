@@ -100,14 +100,7 @@ describe("AuthGuard", () => {
       data: { subscription: { unsubscribe: mockUnsubscribe } },
     });
 
-    let resolveGetUser: (value: {
-      data: { user: { id: string } | null };
-    }) => void;
-    mockGetUser.mockReturnValue(
-      new Promise((r) => {
-        resolveGetUser = r;
-      }),
-    );
+    mockGetUser.mockReturnValue(new Promise(() => {}));
 
     const { unmount } = render(
       <AuthGuard>

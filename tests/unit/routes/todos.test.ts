@@ -1,34 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import type { Todo } from "@/lib/db/schema";
-import { setTodoRepository } from "@/lib/repositories";
 import type { TodoRepository } from "@/lib/repositories/todo-repository";
+import type { RouteDeps } from "@/lib/route-deps";
+import { handleGet, handlePost } from "@/lib/handlers/todos";
+import { handlePatch, handleDelete } from "@/lib/handlers/todo-by-id";
 
-vi.mock("@/lib/env", () => ({
-  getServerEnv: () => ({
-    DATABASE_URL: "postgresql://test:test@localhost/test",
-    NEXT_PUBLIC_SUPABASE_URL: "http://localhost:54321",
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: "test-key",
-  }),
-  getClientEnv: () => ({
-    NEXT_PUBLIC_SUPABASE_URL: "http://localhost:54321",
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: "test-key",
-  }),
-}));
-
-vi.mock("@/lib/supabase/server", () => ({
-  createClient: vi.fn(),
-}));
-
-const mockAuthGetUser = vi.fn();
-const mockCreateClient = vi.fn().mockResolvedValue({
-  auth: { getUser: mockAuthGetUser },
-});
-
-vi.mocked(
-  await import("@/lib/supabase/server"),
-).createClient.mockImplementation(() => mockCreateClient());
-
+const mockGetAuthUser = vi.fn<() => Promise<{ id: string } | null>>();
 const mockRepo: TodoRepository = {
   findAll: vi.fn(),
   findById: vi.fn(),
@@ -37,18 +15,21 @@ const mockRepo: TodoRepository = {
   delete: vi.fn(),
 };
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  mockAuthGetUser.mockResolvedValue({ data: { user: null } });
-  setTodoRepository(mockRepo);
-});
-
 const AUTHENTICATED_USER_ID = "user-123";
 
+function makeDeps(): RouteDeps {
+  return {
+    getAuthUser: mockGetAuthUser,
+    repo: mockRepo,
+  };
+}
+
 function makeAuthenticated() {
-  mockAuthGetUser.mockResolvedValue({
-    data: { user: { id: AUTHENTICATED_USER_ID } },
-  });
+  mockGetAuthUser.mockResolvedValue({ id: AUTHENTICATED_USER_ID });
+}
+
+function makeUnauthenticated() {
+  mockGetAuthUser.mockResolvedValue(null);
 }
 
 function makeTodo(overrides: Partial<Todo> = {}): Todo {
@@ -88,11 +69,14 @@ function makeIdRequest(id: string, body?: unknown) {
   });
 }
 
-describe("GET /api/todos", () => {
-  it("returns 401 when not authenticated", async () => {
-    const { GET } = await import("@/app/api/todos/route");
+beforeEach(() => {
+  vi.clearAllMocks();
+  makeUnauthenticated();
+});
 
-    const res = await GET();
+describe("handleGet", () => {
+  it("returns 401 when not authenticated", async () => {
+    const res = await handleGet(makeDeps());
     expect(res.status).toBe(401);
 
     const json = await res.json();
@@ -105,9 +89,7 @@ describe("GET /api/todos", () => {
     const todos = [makeTodo(), makeTodo({ id: "todo-2", title: "Second" })];
     vi.mocked(mockRepo.findAll).mockResolvedValue(todos);
 
-    const { GET } = await import("@/app/api/todos/route");
-
-    const res = await GET();
+    const res = await handleGet(makeDeps());
     expect(res.status).toBe(200);
 
     const json = await res.json();
@@ -126,19 +108,15 @@ describe("GET /api/todos", () => {
   });
 });
 
-describe("POST /api/todos", () => {
+describe("handlePost", () => {
   it("returns 401 when not authenticated", async () => {
-    const { POST } = await import("@/app/api/todos/route");
-
-    const res = await POST(makeRequest({ title: "Test" }));
+    const res = await handlePost(makeDeps(), makeRequest({ title: "Test" }));
     expect(res.status).toBe(401);
   });
 
   it("returns 400 with validation messages for invalid payload", async () => {
     makeAuthenticated();
-    const { POST } = await import("@/app/api/todos/route");
-
-    const res = await POST(makeRequest({ title: "" }));
+    const res = await handlePost(makeDeps(), makeRequest({ title: "" }));
     expect(res.status).toBe(400);
 
     const json = await res.json();
@@ -148,15 +126,13 @@ describe("POST /api/todos", () => {
 
   it("returns 400 for malformed JSON body", async () => {
     makeAuthenticated();
-    const { POST } = await import("@/app/api/todos/route");
-
     const req = new NextRequest("http://localhost/api/todos", {
       method: "POST",
       body: "not json{{{",
       headers: { "Content-Type": "application/json" },
     });
 
-    const res = await POST(req);
+    const res = await handlePost(makeDeps(), req);
     expect(res.status).toBe(400);
 
     const json = await res.json();
@@ -169,9 +145,10 @@ describe("POST /api/todos", () => {
     const created = makeTodo();
     vi.mocked(mockRepo.create).mockResolvedValue(created);
 
-    const { POST } = await import("@/app/api/todos/route");
-
-    const res = await POST(makeRequest({ title: "Test todo" }));
+    const res = await handlePost(
+      makeDeps(),
+      makeRequest({ title: "Test todo" }),
+    );
     expect(res.status).toBe(201);
 
     const json = await res.json();
@@ -185,23 +162,23 @@ describe("POST /api/todos", () => {
   });
 });
 
-describe("PATCH /api/todos/[id]", () => {
+describe("handlePatch", () => {
   it("returns 401 when not authenticated", async () => {
-    const { PATCH } = await import("@/app/api/todos/[id]/route");
-
-    const res = await PATCH(makeIdRequest("todo-1", { done: true }), {
-      params: Promise.resolve({ id: "todo-1" }),
-    });
+    const res = await handlePatch(
+      makeDeps(),
+      makeIdRequest("todo-1", { done: true }),
+      { params: Promise.resolve({ id: "todo-1" }) },
+    );
     expect(res.status).toBe(401);
   });
 
   it("returns 400 with validation messages for invalid payload", async () => {
     makeAuthenticated();
-    const { PATCH } = await import("@/app/api/todos/[id]/route");
-
-    const res = await PATCH(makeIdRequest("todo-1", { title: "" }), {
-      params: Promise.resolve({ id: "todo-1" }),
-    });
+    const res = await handlePatch(
+      makeDeps(),
+      makeIdRequest("todo-1", { title: "" }),
+      { params: Promise.resolve({ id: "todo-1" }) },
+    );
     expect(res.status).toBe(400);
 
     const json = await res.json();
@@ -210,15 +187,13 @@ describe("PATCH /api/todos/[id]", () => {
 
   it("returns 400 for malformed JSON body", async () => {
     makeAuthenticated();
-    const { PATCH } = await import("@/app/api/todos/[id]/route");
-
     const req = new NextRequest("http://localhost/api/todos/todo-1", {
       method: "PATCH",
       body: "not json{{{",
       headers: { "Content-Type": "application/json" },
     });
 
-    const res = await PATCH(req, {
+    const res = await handlePatch(makeDeps(), req, {
       params: Promise.resolve({ id: "todo-1" }),
     });
     expect(res.status).toBe(400);
@@ -232,11 +207,11 @@ describe("PATCH /api/todos/[id]", () => {
     makeAuthenticated();
     vi.mocked(mockRepo.update).mockResolvedValue(null);
 
-    const { PATCH } = await import("@/app/api/todos/[id]/route");
-
-    const res = await PATCH(makeIdRequest("todo-1", { done: true }), {
-      params: Promise.resolve({ id: "todo-1" }),
-    });
+    const res = await handlePatch(
+      makeDeps(),
+      makeIdRequest("todo-1", { done: true }),
+      { params: Promise.resolve({ id: "todo-1" }) },
+    );
     expect(res.status).toBe(404);
 
     const json = await res.json();
@@ -248,11 +223,11 @@ describe("PATCH /api/todos/[id]", () => {
     const updated = makeTodo({ done: true });
     vi.mocked(mockRepo.update).mockResolvedValue(updated);
 
-    const { PATCH } = await import("@/app/api/todos/[id]/route");
-
-    const res = await PATCH(makeIdRequest("todo-1", { done: true }), {
-      params: Promise.resolve({ id: "todo-1" }),
-    });
+    const res = await handlePatch(
+      makeDeps(),
+      makeIdRequest("todo-1", { done: true }),
+      { params: Promise.resolve({ id: "todo-1" }) },
+    );
     expect(res.status).toBe(200);
 
     const json = await res.json();
@@ -266,11 +241,9 @@ describe("PATCH /api/todos/[id]", () => {
   });
 });
 
-describe("DELETE /api/todos/[id]", () => {
+describe("handleDelete", () => {
   it("returns 401 when not authenticated", async () => {
-    const { DELETE } = await import("@/app/api/todos/[id]/route");
-
-    const res = await DELETE(makeIdRequest("todo-1"), {
+    const res = await handleDelete(makeDeps(), makeIdRequest("todo-1"), {
       params: Promise.resolve({ id: "todo-1" }),
     });
     expect(res.status).toBe(401);
@@ -280,9 +253,7 @@ describe("DELETE /api/todos/[id]", () => {
     makeAuthenticated();
     vi.mocked(mockRepo.delete).mockResolvedValue(null);
 
-    const { DELETE } = await import("@/app/api/todos/[id]/route");
-
-    const res = await DELETE(makeIdRequest("todo-1"), {
+    const res = await handleDelete(makeDeps(), makeIdRequest("todo-1"), {
       params: Promise.resolve({ id: "todo-1" }),
     });
     expect(res.status).toBe(404);
@@ -296,9 +267,7 @@ describe("DELETE /api/todos/[id]", () => {
     const deleted = makeTodo();
     vi.mocked(mockRepo.delete).mockResolvedValue(deleted);
 
-    const { DELETE } = await import("@/app/api/todos/[id]/route");
-
-    const res = await DELETE(makeIdRequest("todo-1"), {
+    const res = await handleDelete(makeDeps(), makeIdRequest("todo-1"), {
       params: Promise.resolve({ id: "todo-1" }),
     });
     expect(res.status).toBe(200);
