@@ -40,7 +40,7 @@ export class DrizzleTodoRepository<
         description: data.description ?? null,
       })
       .returning();
-    return todo;
+    return todo!;
   }
 
   async update(

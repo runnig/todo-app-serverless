@@ -26,7 +26,19 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const body = await request.json();
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      {
+        data: null,
+        error: { code: "VALIDATION_ERROR", message: "Invalid JSON body" },
+      },
+      { status: 400 },
+    );
+  }
+
   const parsed = updateTodoSchema.safeParse(body);
 
   if (!parsed.success) {

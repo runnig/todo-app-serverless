@@ -53,8 +53,8 @@ describe("InMemoryTodoRepository", () => {
 
       const todos = await repo.findAll(userId);
 
-      expect(todos[0].id).toBe(second.id);
-      expect(todos[1].id).toBe(first.id);
+      expect(todos[0]!.id).toBe(second.id);
+      expect(todos[1]!.id).toBe(first.id);
     });
 
     it("returns empty array for user with no todos", async () => {

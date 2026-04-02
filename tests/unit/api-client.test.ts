@@ -180,4 +180,32 @@ describe("apiClient", () => {
       });
     });
   });
+
+  describe("response safety", () => {
+    it("throws ApiClientError when response is not valid JSON", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => {
+          throw new SyntaxError("Unexpected token");
+        },
+      });
+
+      await expect(apiClient.getTodos()).rejects.toMatchObject({
+        code: "INTERNAL_ERROR",
+        message: "Invalid response from server",
+      });
+    });
+
+    it("throws ApiClientError when response shape is unexpected", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ unexpected: "shape" }),
+      });
+
+      await expect(apiClient.getTodos()).rejects.toMatchObject({
+        code: "INTERNAL_ERROR",
+        message: "Unexpected response shape",
+      });
+    });
+  });
 });

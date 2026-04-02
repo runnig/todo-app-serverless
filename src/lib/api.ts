@@ -13,14 +13,41 @@ class ApiClientError extends Error {
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
-  const json: ApiResponse<T> = await response.json();
-
-  if (!response.ok || json.error) {
-    const error = json.error!;
-    throw new ApiClientError(error.code, response.status, error.message);
+  let json: unknown;
+  try {
+    json = await response.json();
+  } catch {
+    throw new ApiClientError(
+      "INTERNAL_ERROR",
+      response.status,
+      "Invalid response from server",
+    );
   }
 
-  return json.data as T;
+  if (
+    typeof json !== "object" ||
+    json === null ||
+    !("data" in json) ||
+    !("error" in json)
+  ) {
+    throw new ApiClientError(
+      "INTERNAL_ERROR",
+      response.status,
+      "Unexpected response shape",
+    );
+  }
+
+  const apiResponse = json as ApiResponse<T>;
+
+  if (!response.ok || apiResponse.error) {
+    throw new ApiClientError(
+      apiResponse.error?.code ?? "INTERNAL_ERROR",
+      response.status,
+      apiResponse.error?.message ?? "Unknown error",
+    );
+  }
+
+  return apiResponse.data as T;
 }
 
 export const apiClient = {

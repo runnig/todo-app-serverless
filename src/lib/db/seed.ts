@@ -5,7 +5,7 @@ import { profiles, todos } from "./schema";
 async function seed() {
   console.log("Seeding database...");
 
-  const [user1, user2] = await db
+  const inserted = await db
     .insert(profiles)
     .values([
       {
@@ -18,6 +18,9 @@ async function seed() {
       },
     ])
     .returning();
+
+  const user1 = inserted[0]!;
+  const user2 = inserted[1]!;
 
   await db.insert(todos).values([
     {
