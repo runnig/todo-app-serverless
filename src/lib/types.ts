@@ -1,15 +1,40 @@
-import { z } from "zod";
+import type { Todo } from "@/lib/db/schema";
 
-export const todoCreateSchema = z.object({
-  title: z.string().min(1, "Title is required").max(200),
-  description: z.string().optional(),
-});
+export interface ApiResponse<T> {
+  data: T | null;
+  error: ApiError | null;
+}
 
-export const todoUpdateSchema = z.object({
-  title: z.string().min(1, "Title is required").max(200).optional(),
-  description: z.string().nullable().optional(),
-  done: z.boolean().optional(),
-});
+export interface ApiError {
+  code: ErrorCode;
+  message: string;
+}
 
-export type TodoCreate = z.infer<typeof todoCreateSchema>;
-export type TodoUpdate = z.infer<typeof todoUpdateSchema>;
+export type ErrorCode =
+  | "UNAUTHORIZED"
+  | "VALIDATION_ERROR"
+  | "NOT_FOUND"
+  | "FORBIDDEN"
+  | "INTERNAL_ERROR";
+
+export interface TodoResponse {
+  id: string;
+  userId: string;
+  title: string;
+  description: string | null;
+  done: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function toTodoResponse(todo: Todo): TodoResponse {
+  return {
+    id: todo.id,
+    userId: todo.userId,
+    title: todo.title,
+    description: todo.description,
+    done: todo.done,
+    createdAt: todo.createdAt.toISOString(),
+    updatedAt: todo.updatedAt.toISOString(),
+  };
+}
