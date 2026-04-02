@@ -1,3 +1,7 @@
+## Makefile
+
+Make sure to use "make lint", "make test-unit" and other make targets to verify your last edits.
+
 <!-- BEGIN:nextjs-agent-rules -->
 # This is NOT the Next.js you know
 
@@ -29,3 +33,9 @@ You may skip `distill` only in these cases:
 - Using `distill` would break an interactive or TUI workflow.
 
 CRITICAL: Wait for `distill` to finish before continuing.
+
+## Small LLM
+
+Whenever possible or useful, use the small LLM (4 Billion parameters) available for you through the
+command line `llm -m lmstudio/qwen3.5-4b "some query"`. This will help to speed up tasks and
+save tokens
