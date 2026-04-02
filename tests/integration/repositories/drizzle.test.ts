@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { DrizzleTodoRepository } from "@/lib/repositories/drizzle";
-import { setupTestUser, teardownTestUser, TEST_USER_ID } from "../helpers";
+import {
+  setupTestUser,
+  teardownTestUser,
+  TEST_USER_ID,
+  createTestDb,
+} from "../helpers";
 
 describe("DrizzleTodoRepository", () => {
   let repo: DrizzleTodoRepository;
@@ -8,7 +13,7 @@ describe("DrizzleTodoRepository", () => {
 
   beforeAll(async () => {
     await setupTestUser();
-    repo = new DrizzleTodoRepository();
+    repo = new DrizzleTodoRepository(createTestDb());
   });
 
   afterAll(async () => {
