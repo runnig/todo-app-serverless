@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +14,7 @@ import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { TodoForm } from "./TodoForm";
 import { apiClient } from "@/lib/api";
 import type { TodoResponse } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 interface TodoItemProps {
   todo: TodoResponse;
@@ -72,10 +73,13 @@ export function TodoItem({ todo, onUpdate, onDelete }: TodoItemProps) {
           )}
         </div>
         <DropdownMenu>
-          <DropdownMenuTrigger>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
+          <DropdownMenuTrigger
+            className={cn(
+              buttonVariants({ variant: "ghost", size: "icon" }),
+              "h-8 w-8",
+            )}
+          >
+            <MoreVertical className="h-4 w-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => setEditing(true)}>
