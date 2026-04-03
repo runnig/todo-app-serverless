@@ -20,13 +20,15 @@ export const TODO_FILTERS = {
 export type TodoFilter = (typeof TODO_FILTERS)[keyof typeof TODO_FILTERS];
 
 // TODO: consider replacing ApiSuccess and ApiError with
-// ApiStatus object with status_code enum:
+// ApiResponse object with status_code:
 // enum StatusCode {
 //   OK = 0,
+//   NOT_FOUND = 1,
 //   ...
 // }
-// export interface ApiStatus<T> {
-//    data: T;
+// export interface NoData {}
+// export interface ApiResponse<T> {
+//    data: T | NoData;
 //    status_code: StatusCode;
 //    error: string; // if no error, empty
 // }
