@@ -1,6 +1,14 @@
-.PHONY: help dev build lint lint-fast format format-check test test-unit test-integration test-watch test-integration-full db-start db-stop db-reset db-seed db-migrate db-push db-studio supabase-init setup clean install
+.PHONY: help dev build lint lint-fast format format-check typecheck test test-unit test-integration test-watch test-integration-full verify db-start db-stop db-reset db-seed db-generate db-migrate db-push db-studio supabase-init setup clean install
 
-DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+DATABASE_URL:="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+NEXT_PUBLIC_SUPABASE_URL:="http://localhost:54321"
+NEXT_PUBLIC_SUPABASE_ANON_KEY:="sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH"
+
+VARS = \
+  DATABASE_URL=$(DATABASE_URL) \
+  NEXT_PUBLIC_SUPABASE_URL=$(NEXT_PUBLIC_SUPABASE_URL) \
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=$(NEXT_PUBLIC_SUPABASE_ANON_KEY)
+
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -32,13 +40,18 @@ lint: ## Run ESLint
 	npx eslint
 
 lint-fast: ## Run Oxlint for a fast lint pass
-	npm run lint:fast
+	npx run lint:fast
+
+typecheck: ## Run TypeScript type checking
+	npm run typecheck
 
 format: ## Format code with Prettier
 	npx prettier --write "src/**/*.{ts,tsx}" "tests/**/*.{ts,tsx}"
 
 format-check: ## Check formatting
 	npx prettier --check "src/**/*.{ts,tsx}" "tests/**/*.{ts,tsx}"
+
+verify: lint typecheck test-unit build ## Run all checks (lint, typecheck, unit tests, build)
 
 # --- Database ---
 
@@ -52,10 +65,13 @@ db-reset: ## Reset local database (applies all migrations)
 	npx supabase db reset
 
 db-seed: ## Seed local database with sample data
-	npm run db:seed
+	$(VARS) npm run db:seed
 
-db-migrate: ## Generate Drizzle migration from schema changes
+db-generate: ## Generate Drizzle migration from schema changes
 	npx drizzle-kit generate
+
+db-migrate: ## Apply pending Drizzle migrations
+	npx drizzle-kit migrate
 
 db-push: ## Push schema changes to local DB (no migration file)
 	npx drizzle-kit push
@@ -77,7 +93,6 @@ test-integration-full: db-reset db-seed test-integration ## Reset DB, seed, and 
 setup: ## First-time setup: install deps, init Supabase, start DB, migrate, seed
 	npm install
 	npx supabase start
-	npx drizzle-kit generate
 	npx drizzle-kit migrate
 	npm run db:seed
 	@echo "Setup complete! Run 'make dev' to start the development server."

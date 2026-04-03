@@ -6,16 +6,16 @@ A multi-user TODO app built as a learning project and a foundation for future ap
 
 **Tech stack:**
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Next.js 14 (App Router) |
-| Styling | Tailwind CSS + Shadcn/ui |
-| Backend | Next.js API Routes (serverless functions) |
-| Database | Supabase (Postgres) |
-| ORM | Drizzle ORM |
-| Auth | Supabase Auth (client SDK) |
-| Validation | Zod |
-| Testing | Vitest + React Testing Library |
+| Layer      | Technology                                 |
+| ---------- | ------------------------------------------ |
+| Frontend   | Next.js (App Router)                       |
+| Styling    | Tailwind CSS + Shadcn/ui                   |
+| Backend    | Next.js API Routes (serverless functions)  |
+| Database   | Supabase (Postgres)                        |
+| ORM        | Drizzle ORM                                |
+| Auth       | Supabase Auth (client SDK)                 |
+| Validation | Zod                                        |
+| Testing    | Vitest + React Testing Library             |
 | Deployment | Vercel (frontend/API) + Supabase (DB/Auth) |
 
 ## 2. Architecture
@@ -98,13 +98,20 @@ All database access goes through a `TodoRepository` interface, enabling differen
 interface TodoRepository {
   findAll(userId: string): Promise<Todo[]>;
   findById(id: string, userId: string): Promise<Todo | null>;
-  create(data: Omit<NewTodo, "id" | "createdAt" | "updatedAt"> & { userId: string }): Promise<Todo>;
-  update(id: string, userId: string, data: Partial<UpdateTodoInput>): Promise<Todo | null>;
+  create(
+    data: Omit<NewTodo, "id" | "createdAt" | "updatedAt"> & { userId: string },
+  ): Promise<Todo>;
+  update(
+    id: string,
+    userId: string,
+    data: Partial<UpdateTodoInput>,
+  ): Promise<Todo | null>;
   delete(id: string, userId: string): Promise<Todo | null>;
 }
 ```
 
 **Implementations:**
+
 - `InMemoryTodoRepository` — in-memory store for unit tests, zero dependencies
 - `DrizzleTodoRepository` — wraps Drizzle ORM, used for local Postgres (integration tests) and production
 
@@ -114,18 +121,18 @@ API routes receive a `TodoRepository` via dependency injection rather than calli
 
 ### Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/todos` | List all todos for authenticated user |
-| `POST` | `/api/todos` | Create a new todo |
-| `PATCH` | `/api/todos/:id` | Update title, description, or done status |
-| `DELETE` | `/api/todos/:id` | Delete a todo |
+| Method   | Endpoint         | Description                               |
+| -------- | ---------------- | ----------------------------------------- |
+| `GET`    | `/api/todos`     | List all todos for authenticated user     |
+| `POST`   | `/api/todos`     | Create a new todo                         |
+| `PATCH`  | `/api/todos/:id` | Update title, description, or done status |
+| `DELETE` | `/api/todos/:id` | Delete a todo                             |
 
 ### Authentication
 
 Supabase Auth SDK handles all auth flows directly from the frontend (`signUp`, `signInWithPassword`, `signOut`). No custom auth API routes needed.
 
-The JWT is sent with requests to our API routes. A Next.js middleware validates the JWT on every request and extracts `user_id`. Unauthenticated requests return `401`.
+The JWT is sent with requests to our API routes. API route handlers validate the JWT via Supabase server client and extract the user. Unauthenticated requests return `401`.
 
 ### Validation
 
@@ -140,13 +147,13 @@ Zod schemas at API boundaries validate request bodies and return `400` with clea
 
 ### Error Codes
 
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `UNAUTHORIZED` | 401 | Missing or invalid JWT |
-| `VALIDATION_ERROR` | 400 | Invalid request body |
-| `NOT_FOUND` | 404 | Todo not found |
-| `FORBIDDEN` | 403 | Todo belongs to another user |
-| `INTERNAL_ERROR` | 500 | Unexpected server error |
+| Code               | HTTP Status | Description                  |
+| ------------------ | ----------- | ---------------------------- |
+| `UNAUTHORIZED`     | 401         | Missing or invalid JWT       |
+| `VALIDATION_ERROR` | 400         | Invalid request body         |
+| `NOT_FOUND`        | 404         | Todo not found               |
+| `FORBIDDEN`        | 403         | Todo belongs to another user |
+| `INTERNAL_ERROR`   | 500         | Unexpected server error      |
 
 ## 6. Frontend / UI
 
@@ -166,6 +173,7 @@ Zod schemas at API boundaries validate request bodies and return `400` with clea
 ### Styling
 
 Tailwind CSS for layout and custom styles. Shadcn/ui for interactive components:
+
 - `Button` — actions
 - `Input` / `Textarea` — todo form fields
 - `Checkbox` — mark-as-done toggle
@@ -188,12 +196,12 @@ React's built-in `useState`/`useEffect` with the Supabase client for auth state.
 
 ## 8. Testing Strategy
 
-| Layer | Tool | What it tests |
-|-------|------|---------------|
-| Unit | Vitest | Zod schemas, utility functions, business logic |
-| Component | Vitest + React Testing Library | UI components render correctly, user interactions work |
-| API integration | Vitest + fetch mocks | API routes validate input, return correct responses |
-| E2E / integration | Vitest + real DB | Full CRUD flow against local Supabase (Docker) |
+| Layer             | Tool                           | What it tests                                          |
+| ----------------- | ------------------------------ | ------------------------------------------------------ |
+| Unit              | Vitest                         | Zod schemas, utility functions, business logic         |
+| Component         | Vitest + React Testing Library | UI components render correctly, user interactions work |
+| API integration   | Vitest + fetch mocks           | API routes validate input, return correct responses    |
+| E2E / integration | Vitest + real DB               | Full CRUD flow against local Supabase (Docker)         |
 
 ### Local Testing Flow
 
@@ -213,8 +221,10 @@ todo-app-serverless/
 │   ├── app/                    # Next.js App Router
 │   │   ├── layout.tsx
 │   │   ├── page.tsx            # Home (todo list)
+│   │   ├── globals.css
 │   │   ├── login/page.tsx
 │   │   ├── signup/page.tsx
+│   │   ├── logout-button.tsx
 │   │   └── api/
 │   │       └── todos/
 │   │           ├── route.ts        # GET, POST
@@ -226,26 +236,44 @@ todo-app-serverless/
 │   │   ├── TodoForm.tsx
 │   │   └── AuthGuard.tsx
 │   ├── lib/
-│   │   ├── supabase.ts         # Supabase client init
+│   │   ├── supabase/          # Supabase client init
+│   │   │   ├── client.ts
+│   │   │   ├── server.ts
+│   │   │   └── middleware.ts
 │   │   ├── db/                 # Drizzle schema + connection
 │   │   │   ├── schema.ts
-│   │   │   └── index.ts
+│   │   │   ├── index.ts
+│   │   │   └── seed.ts
+│   │   ├── handlers/           # Route handler logic
+│   │   │   ├── todos.ts
+│   │   │   └── todo-by-id.ts
 │   │   ├── repositories/       # Repository pattern
 │   │   │   ├── todo-repository.ts  # Abstract interface
 │   │   │   ├── in-memory.ts       # InMemoryTodoRepository (unit tests)
-│   │   │   └── drizzle.ts         # DrizzleTodoRepository (integration/prod)
-│   │   ├── types.ts            # Shared types
-│   │   └── api.ts              # Typed API client for frontend
-│   └── middleware.ts            # Auth check on protected routes
+│   │   │   ├── drizzle.ts         # DrizzleTodoRepository (integration/prod)
+│   │   │   └── index.ts           # Factory
+│   │   ├── types.ts            # Shared types and constants
+│   │   ├── schemas.ts          # Zod validation schemas
+│   │   ├── api.ts              # Typed API client for frontend
+│   │   ├── env.ts              # Zod-validated environment config
+│   │   ├── route-deps.ts       # Route dependency injection
+│   │   └── utils.ts            # Utility functions
+│   └── proxy.ts
+├── tests/
+│   ├── unit/
+│   │   ├── routes/
+│   │   ├── components/
+│   │   ├── repositories/
+│   │   ├── schemas.test.ts
+│   │   └── api-client.test.ts
+│   └── integration/
 ├── supabase/
 │   ├── config.toml
-│   ├── migrations/
-│   └── seed.sql
+│   └── migrations/
 ├── docs/
 ├── drizzle.config.ts
 ├── next.config.ts
 ├── package.json
-├── tailwind.config.ts
 └── vitest.config.ts
 ```
 

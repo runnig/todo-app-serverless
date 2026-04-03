@@ -27,7 +27,7 @@ This spins up Postgres + Supabase Auth in Docker. When it finishes, it prints yo
 cp .env.local.example .env.local
 ```
 
-Replace the placeholder values with the output from `supabase start`:
+Replace the placeholder value --caches with the output from `supabase start`:
 
 - `NEXT_PUBLIC_SUPABASE_URL` — typically `http://localhost:54321`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — the `anon key` from output
@@ -51,19 +51,20 @@ Visit `http://localhost:3000`. Sign up, then add/check/filter/delete todos.
 ## Step 6: Run tests
 
 ```bash
-make test:unit           # Unit tests (no DB needed)
-make test:integration    # Integration tests (needs Supabase running)
+make test-unit           # Unit tests (no DB needed)
+make test-integration    # Integration tests (needs Supabase running)
 ```
 
 ## Quick reference
 
-| Step | Command | Requires Docker? |
-|------|---------|-----------------|
-| Start Supabase | `npx supabase start` | Yes |
-| Configure env | Edit `.env.local` | No |
-| Migrate DB | `npx drizzle-kit migrate` | Yes |
-| Seed data | `npm run db:seed` | Yes |
-| Dev server | `npm run dev` | Yes |
-| Unit tests | `make test:unit` | No |
-| Integration tests | `make test:integration` | Yes |
-| Full integration flow | `make test:integration:full` | Yes |
+| Step                  | Command                      | Requires Docker? |
+| --------------------- | ---------------------------- | ---------------- |
+| Start Supabase        | `npx supabase start`         | Yes              |
+| Configure env         | Edit `.env.local`            | No               |
+| Migrate DB            | `npx drizzle-kit migrate`    | Yes              |
+| Seed data             | `npm run db:seed`            | Yes              |
+| Dev server            | `npm run dev`                | Yes              |
+| Unit tests            | `make test-unit`             | No               |
+| Integration tests     | `make test-integration`      | Yes              |
+| Full integration flow | `make test-integration-full` | Yes              |
+| All checks            | `make verify`                | Yes              |

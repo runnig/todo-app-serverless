@@ -5,6 +5,7 @@
     "allowJs": false,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
+    "exactOptionalPropertyTypes": true,
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,

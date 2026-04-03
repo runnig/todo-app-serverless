@@ -1,36 +1,102 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Todo App (Serverless)
 
-## Getting Started
+A multi-user todo application built with Next.js, Supabase, and Drizzle ORM.
 
-First, run the development server:
+## Tech Stack
+
+| Layer      | Technology                       |
+| ---------- | -------------------------------- |
+| Frontend   | Next.js (App Router) + Shadcn/ui |
+| Backend    | Next.js API Routes               |
+| Database   | Supabase (Postgres)              |
+| ORM        | Drizzle ORM                      |
+| Auth       | Supabase Auth                    |
+| Validation | Zod                              |
+| Testing    | Vitest + React Testing Library   |
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js 18+
+- Docker (for local Supabase)
+
+### Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+make setup
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+This installs dependencies, starts local Supabase, runs migrations, and seeds the database.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Configure environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cp .env.local.example .env.local
+```
 
-## Learn More
+Update `.env.local` with the values printed by `supabase start`:
 
-To learn more about Next.js, take a look at the following resources:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `DATABASE_URL`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Run the dev server
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+make dev
+```
 
-## Deploy on Vercel
+Visit `http://localhost:3000`. Sign up, then add/check/filter/delete todos.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Common Commands
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Command                 | Description                               |
+| ----------------------- | ----------------------------------------- |
+| `make dev`              | Start Next.js dev server                  |
+| `make build`            | Build for production                      |
+| `make lint`             | Run ESLint                                |
+| `make typecheck`        | Run TypeScript type checking              |
+| `make test-unit`        | Run unit tests (no DB needed)             |
+| `make test-integration` | Run integration tests (needs Supabase)    |
+| `make verify`           | Run lint + typecheck + unit tests + build |
+| `make db-generate`      | Generate migration from schema changes    |
+| `make db-migrate`       | Apply pending migrations                  |
+| `make db-seed`          | Seed the database                         |
+| `make db-reset`         | Reset DB and reapply migrations           |
+| `make help`             | Show all available targets                |
+
+## Project Structure
+
+```
+src/
+├── app/                    # Next.js App Router (pages + API routes)
+│   ├── api/todos/          # REST API: GET, POST, PATCH, DELETE
+│   ├── login/              # Login page
+│   └── signup/             # Signup page
+├── components/             # React components (TodoList, TodoItem, etc.)
+├── lib/
+│   ├── handlers/           # Route handler logic with DI
+│   ├── repositories/       # Repository pattern (in-memory + Drizzle)
+│   ├── db/                 # Drizzle schema, connection, seed
+│   ├── supabase/           # Supabase client/server/middleware
+│   ├── types.ts            # Shared types and constants
+│   ├── schemas.ts          # Zod validation schemas
+│   └── api.ts              # Typed API client
+└── tests/
+    ├── unit/               # Unit and component tests
+    └── integration/        # Integration tests (real DB)
+```
+
+## Architecture
+
+- **Repository pattern**: All DB access goes through a `TodoRepository` interface. `InMemoryTodoRepository` for unit tests, `DrizzleTodoRepository` for integration/production.
+- **Dependency injection**: Route handlers receive dependencies (`getAuthUser`, `repo`) via `RouteDeps`, making them easy to test without HTTP.
+- **Shared types**: `src/lib/types.ts` defines the API response envelope, error codes, and todo response shape used by both frontend and backend.
+- **Schema validation**: Zod schemas at API boundaries validate request bodies and UUID parameters.
+
+## Documentation
+
+- [Detailed Design](docs/detailed-design.md)
+- [Manual Testing Guide](docs/manual-testing.md)
+- [Improvement Recommendations](docs/improvements.md)
