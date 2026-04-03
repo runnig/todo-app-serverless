@@ -2,12 +2,6 @@
 
 Make sure to use "make lint", "make test-unit" and other make targets to verify your last edits.
 
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
-
 ## Optimize command line tool usage
 
 CRITICAL: Pipe every non-interactive shell command through `distill` unless raw output is explicitly required.
@@ -39,3 +33,11 @@ CRITICAL: Wait for `distill` to finish before continuing.
 Whenever possible or useful, use the small LLM (4 Billion parameters) available for you through the
 command line `llm -m lmstudio/qwen3.5-4b "some query"`. This will help to speed up tasks and
 save tokens
+
+## Next.js
+
+<!-- BEGIN:nextjs-agent-rules -->
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+<!-- END:nextjs-agent-rules -->
