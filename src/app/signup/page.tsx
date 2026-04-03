@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { getClientEnv } from "@/lib/env";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,11 +17,12 @@ import {
 } from "@/components/ui/card";
 
 export default function SignupPage() {
-  const router = useRouter();
+  const env = getClientEnv();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [confirmationSent, setConfirmationSent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,8 +38,38 @@ export default function SignupPage() {
       return;
     }
 
-    router.refresh();
-    router.push("/");
+    setConfirmationSent(true);
+    setLoading(false);
+  }
+
+  async function handleOAuth(provider: "google" | "github") {
+    const supabase = createClient();
+    await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: `${env.NEXT_PUBLIC_APP_URL}/auth/callback` },
+    });
+  }
+
+  if (confirmationSent) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <Card className="w-full max-w-sm">
+          <CardHeader>
+            <CardTitle>Check your email</CardTitle>
+            <CardDescription>
+              Check your email to confirm your account.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Link href="/login" className="w-full">
+              <Button variant="outline" className="w-full">
+                Back to login
+              </Button>
+            </Link>
+          </CardFooter>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -77,6 +108,24 @@ export default function SignupPage() {
                 required
                 minLength={6}
               />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => handleOAuth("google")}
+              >
+                Continue with Google
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => handleOAuth("github")}
+              >
+                Continue with GitHub
+              </Button>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-2">
