@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { createTodoSchema, updateTodoSchema } from "@/lib/schemas";
+import {
+  createTodoSchema,
+  updateTodoSchema,
+  todoIdSchema,
+} from "@/lib/schemas";
 
 describe("createTodoSchema", () => {
   it("accepts valid input with title only", () => {
@@ -23,6 +27,22 @@ describe("createTodoSchema", () => {
     }
   });
 
+  it("rejects whitespace-only title", () => {
+    const result = createTodoSchema.safeParse({ title: "   " });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]!.message).toBe("Title is required");
+    }
+  });
+
+  it("trims title before validation", () => {
+    const result = createTodoSchema.safeParse({ title: "  Buy milk  " });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.title).toBe("Buy milk");
+    }
+  });
+
   it("rejects title over 200 characters", () => {
     const result = createTodoSchema.safeParse({ title: "a".repeat(201) });
     expect(result.success).toBe(false);
@@ -43,9 +63,16 @@ describe("createTodoSchema", () => {
 });
 
 describe("updateTodoSchema", () => {
-  it("accepts empty object (no fields to update)", () => {
+  it("rejects empty object (no fields to update)", () => {
     const result = updateTodoSchema.safeParse({});
-    expect(result.success).toBe(true);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some(
+          (i) => i.message === "At least one field must be provided",
+        ),
+      ).toBe(true);
+    }
   });
 
   it("accepts partial update with done only", () => {
@@ -56,6 +83,19 @@ describe("updateTodoSchema", () => {
   it("accepts partial update with title only", () => {
     const result = updateTodoSchema.safeParse({ title: "Updated title" });
     expect(result.success).toBe(true);
+  });
+
+  it("trims title before validation", () => {
+    const result = updateTodoSchema.safeParse({ title: "  Updated  " });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.title).toBe("Updated");
+    }
+  });
+
+  it("rejects whitespace-only title", () => {
+    const result = updateTodoSchema.safeParse({ title: "   " });
+    expect(result.success).toBe(false);
   });
 
   it("accepts setting description to null", () => {
@@ -70,6 +110,25 @@ describe("updateTodoSchema", () => {
 
   it("rejects non-boolean done value", () => {
     const result = updateTodoSchema.safeParse({ done: "true" });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("todoIdSchema", () => {
+  it("accepts a valid UUID", () => {
+    const result = todoIdSchema.safeParse(
+      "550e8400-e29b-41d4-a716-446655440000",
+    );
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a non-UUID string", () => {
+    const result = todoIdSchema.safeParse("not-a-uuid");
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an empty string", () => {
+    const result = todoIdSchema.safeParse("");
     expect(result.success).toBe(false);
   });
 });

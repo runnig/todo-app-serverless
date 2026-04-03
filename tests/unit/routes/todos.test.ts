@@ -15,7 +15,8 @@ const mockRepo: TodoRepository = {
   delete: vi.fn(),
 };
 
-const AUTHENTICATED_USER_ID = "user-123";
+const AUTHENTICATED_USER_ID = "550e8400-e29b-41d4-a716-446655440099";
+const TODO_ID = "550e8400-e29b-41d4-a716-446655440001";
 
 function makeDeps(): RouteDeps {
   return {
@@ -34,7 +35,7 @@ function makeUnauthenticated() {
 
 function makeTodo(overrides: Partial<Todo> = {}): Todo {
   return {
-    id: "todo-1",
+    id: TODO_ID,
     userId: AUTHENTICATED_USER_ID,
     title: "Test todo",
     description: null,
@@ -86,7 +87,10 @@ describe("handleGet", () => {
 
   it("returns mapped todos for authenticated user", async () => {
     makeAuthenticated();
-    const todos = [makeTodo(), makeTodo({ id: "todo-2", title: "Second" })];
+    const todos = [
+      makeTodo(),
+      makeTodo({ id: "550e8400-e29b-41d4-a716-446655440002", title: "Second" }),
+    ];
     vi.mocked(mockRepo.findAll).mockResolvedValue(todos);
 
     const res = await handleGet(makeDeps());
@@ -95,7 +99,7 @@ describe("handleGet", () => {
     const json = await res.json();
     expect(json.data).toHaveLength(2);
     expect(json.data[0]).toEqual({
-      id: "todo-1",
+      id: "550e8400-e29b-41d4-a716-446655440001",
       userId: AUTHENTICATED_USER_ID,
       title: "Test todo",
       description: null,
@@ -152,7 +156,7 @@ describe("handlePost", () => {
     expect(res.status).toBe(201);
 
     const json = await res.json();
-    expect(json.data.id).toBe("todo-1");
+    expect(json.data.id).toBe("550e8400-e29b-41d4-a716-446655440001");
     expect(json.data.title).toBe("Test todo");
     expect(json.data.createdAt).toBe("2024-01-01T00:00:00.000Z");
     expect(json.error).toBeNull();
@@ -166,8 +170,10 @@ describe("handlePatch", () => {
   it("returns 401 when not authenticated", async () => {
     const res = await handlePatch(
       makeDeps(),
-      makeIdRequest("todo-1", { done: true }),
-      { params: Promise.resolve({ id: "todo-1" }) },
+      makeIdRequest("550e8400-e29b-41d4-a716-446655440001", { done: true }),
+      {
+        params: Promise.resolve({ id: "550e8400-e29b-41d4-a716-446655440001" }),
+      },
     );
     expect(res.status).toBe(401);
   });
@@ -176,8 +182,10 @@ describe("handlePatch", () => {
     makeAuthenticated();
     const res = await handlePatch(
       makeDeps(),
-      makeIdRequest("todo-1", { title: "" }),
-      { params: Promise.resolve({ id: "todo-1" }) },
+      makeIdRequest("550e8400-e29b-41d4-a716-446655440001", { title: "" }),
+      {
+        params: Promise.resolve({ id: "550e8400-e29b-41d4-a716-446655440001" }),
+      },
     );
     expect(res.status).toBe(400);
 
@@ -194,7 +202,7 @@ describe("handlePatch", () => {
     });
 
     const res = await handlePatch(makeDeps(), req, {
-      params: Promise.resolve({ id: "todo-1" }),
+      params: Promise.resolve({ id: "550e8400-e29b-41d4-a716-446655440001" }),
     });
     expect(res.status).toBe(400);
 
@@ -209,13 +217,44 @@ describe("handlePatch", () => {
 
     const res = await handlePatch(
       makeDeps(),
-      makeIdRequest("todo-1", { done: true }),
-      { params: Promise.resolve({ id: "todo-1" }) },
+      makeIdRequest("550e8400-e29b-41d4-a716-446655440001", { done: true }),
+      {
+        params: Promise.resolve({ id: "550e8400-e29b-41d4-a716-446655440001" }),
+      },
     );
     expect(res.status).toBe(404);
 
     const json = await res.json();
     expect(json.error.code).toBe("NOT_FOUND");
+  });
+
+  it("returns 400 for invalid UUID in params", async () => {
+    makeAuthenticated();
+    const res = await handlePatch(
+      makeDeps(),
+      makeIdRequest("not-a-uuid", { done: true }),
+      { params: Promise.resolve({ id: "not-a-uuid" }) },
+    );
+    expect(res.status).toBe(400);
+
+    const json = await res.json();
+    expect(json.error.code).toBe("VALIDATION_ERROR");
+    expect(json.error.message).toBe("Invalid todo ID");
+  });
+
+  it("returns 400 for empty PATCH body", async () => {
+    makeAuthenticated();
+    const res = await handlePatch(
+      makeDeps(),
+      makeIdRequest("550e8400-e29b-41d4-a716-446655440001", {}),
+      {
+        params: Promise.resolve({ id: "550e8400-e29b-41d4-a716-446655440001" }),
+      },
+    );
+    expect(res.status).toBe(400);
+
+    const json = await res.json();
+    expect(json.error.code).toBe("VALIDATION_ERROR");
   });
 
   it("returns updated TodoResponse on success", async () => {
@@ -225,8 +264,10 @@ describe("handlePatch", () => {
 
     const res = await handlePatch(
       makeDeps(),
-      makeIdRequest("todo-1", { done: true }),
-      { params: Promise.resolve({ id: "todo-1" }) },
+      makeIdRequest("550e8400-e29b-41d4-a716-446655440001", { done: true }),
+      {
+        params: Promise.resolve({ id: "550e8400-e29b-41d4-a716-446655440001" }),
+      },
     );
     expect(res.status).toBe(200);
 
@@ -234,7 +275,7 @@ describe("handlePatch", () => {
     expect(json.data.done).toBe(true);
     expect(json.error).toBeNull();
     expect(mockRepo.update).toHaveBeenCalledWith(
-      "todo-1",
+      "550e8400-e29b-41d4-a716-446655440001",
       AUTHENTICATED_USER_ID,
       { done: true },
     );
@@ -243,9 +284,13 @@ describe("handlePatch", () => {
 
 describe("handleDelete", () => {
   it("returns 401 when not authenticated", async () => {
-    const res = await handleDelete(makeDeps(), makeIdRequest("todo-1"), {
-      params: Promise.resolve({ id: "todo-1" }),
-    });
+    const res = await handleDelete(
+      makeDeps(),
+      makeIdRequest("550e8400-e29b-41d4-a716-446655440001"),
+      {
+        params: Promise.resolve({ id: "550e8400-e29b-41d4-a716-446655440001" }),
+      },
+    );
     expect(res.status).toBe(401);
   });
 
@@ -253,9 +298,13 @@ describe("handleDelete", () => {
     makeAuthenticated();
     vi.mocked(mockRepo.delete).mockResolvedValue(null);
 
-    const res = await handleDelete(makeDeps(), makeIdRequest("todo-1"), {
-      params: Promise.resolve({ id: "todo-1" }),
-    });
+    const res = await handleDelete(
+      makeDeps(),
+      makeIdRequest("550e8400-e29b-41d4-a716-446655440001"),
+      {
+        params: Promise.resolve({ id: "550e8400-e29b-41d4-a716-446655440001" }),
+      },
+    );
     expect(res.status).toBe(404);
 
     const json = await res.json();
@@ -267,16 +316,20 @@ describe("handleDelete", () => {
     const deleted = makeTodo();
     vi.mocked(mockRepo.delete).mockResolvedValue(deleted);
 
-    const res = await handleDelete(makeDeps(), makeIdRequest("todo-1"), {
-      params: Promise.resolve({ id: "todo-1" }),
-    });
+    const res = await handleDelete(
+      makeDeps(),
+      makeIdRequest("550e8400-e29b-41d4-a716-446655440001"),
+      {
+        params: Promise.resolve({ id: "550e8400-e29b-41d4-a716-446655440001" }),
+      },
+    );
     expect(res.status).toBe(200);
 
     const json = await res.json();
-    expect(json.data.id).toBe("todo-1");
+    expect(json.data.id).toBe("550e8400-e29b-41d4-a716-446655440001");
     expect(json.error).toBeNull();
     expect(mockRepo.delete).toHaveBeenCalledWith(
-      "todo-1",
+      "550e8400-e29b-41d4-a716-446655440001",
       AUTHENTICATED_USER_ID,
     );
   });

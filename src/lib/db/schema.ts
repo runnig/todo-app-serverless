@@ -5,6 +5,7 @@ import {
   text,
   boolean,
   timestamp,
+  index,
 } from "drizzle-orm/pg-core";
 
 export const profiles = pgTable("profiles", {
@@ -15,21 +16,30 @@ export const profiles = pgTable("profiles", {
     .notNull(),
 });
 
-export const todos = pgTable("todos", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => profiles.id, { onDelete: "cascade" }),
-  title: varchar("title", { length: 200 }).notNull(),
-  description: text("description"),
-  done: boolean("done").default(false).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+// TODO: using string literals here feels brittle.
+// consider replacing them with string constants
+export const todos = pgTable(
+  "todos",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    title: varchar("title", { length: 200 }).notNull(),
+    description: text("description"),
+    done: boolean("done").default(false).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("todos_user_id_idx").on(table.userId),
+    index("todos_user_id_created_at_idx").on(table.userId, table.createdAt),
+  ],
+);
 
 export type Profile = typeof profiles.$inferSelect;
 export type NewProfile = typeof profiles.$inferInsert;

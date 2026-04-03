@@ -30,7 +30,11 @@ export function TodoItem({ todo, onUpdate, onDelete }: TodoItemProps) {
     onUpdate(updated);
   }
 
-  async function handleUpdate(data: { title: string; description?: string }) {
+  // TODO: consider using empty string "" instead of undefined
+  async function handleUpdate(data: {
+    title: string;
+    description?: string | undefined;
+  }) {
     const updated = await apiClient.updateTodo(todo.id, {
       title: data.title,
       description: data.description || null,

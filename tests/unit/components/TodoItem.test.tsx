@@ -102,4 +102,57 @@ describe("TodoItem", () => {
     expect(apiClient.deleteTodo).toHaveBeenCalledWith("1");
     expect(onDelete).toHaveBeenCalledWith(baseTodo);
   });
+
+  it("restores view mode when edit is cancelled", async () => {
+    const user = userEvent.setup();
+    render(
+      <TodoItem todo={baseTodo} onUpdate={onUpdate} onDelete={onDelete} />,
+    );
+    await user.click(screen.getByRole("button"));
+    await user.click(await screen.findByText("Edit"));
+    expect(screen.getByText("Update")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByText("Test todo")).toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText("What needs to be done?"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("calls updateTodo with description null when description is cleared", async () => {
+    const user = userEvent.setup();
+    const todo = { ...baseTodo, description: "Has desc" };
+    const updatedTodo = { ...todo, description: null };
+    vi.mocked(apiClient.updateTodo).mockResolvedValueOnce(updatedTodo);
+    render(<TodoItem todo={todo} onUpdate={onUpdate} onDelete={onDelete} />);
+    await user.click(screen.getByRole("button"));
+    await user.click(await screen.findByText("Edit"));
+    const descInput = screen.getByPlaceholderText("Description (optional)");
+    await user.clear(descInput);
+    await user.click(screen.getByRole("button", { name: "Update" }));
+    expect(apiClient.updateTodo).toHaveBeenCalledWith("1", {
+      title: "Test todo",
+      description: null,
+    });
+  });
+
+  it("does not call onDelete when deleteTodo rejects", async () => {
+    const user = userEvent.setup();
+    const saved = process.listeners("unhandledRejection").slice();
+    process.removeAllListeners("unhandledRejection");
+    const caught = new Promise<void>((r) =>
+      process.once("unhandledRejection", () => r()),
+    );
+    vi.mocked(apiClient.deleteTodo).mockRejectedValueOnce(new Error("fail"));
+    render(
+      <TodoItem todo={baseTodo} onUpdate={onUpdate} onDelete={onDelete} />,
+    );
+    await user.click(screen.getByRole("button"));
+    await user.click(await screen.findByText("Delete"));
+    await caught;
+    expect(onDelete).not.toHaveBeenCalled();
+    process.removeAllListeners("unhandledRejection");
+    saved.forEach((l) =>
+      process.on("unhandledRejection", l as (...args: unknown[]) => void),
+    );
+  });
 });

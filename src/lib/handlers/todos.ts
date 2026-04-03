@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createTodoSchema } from "@/lib/schemas";
-import { ApiResponse, TodoResponse, toTodoResponse } from "@/lib/types";
+import {
+  ApiResponse,
+  ERROR_CODES,
+  TodoResponse,
+  toTodoResponse,
+} from "@/lib/types";
 import type { RouteDeps } from "@/lib/route-deps";
 
 export async function handleGet(
@@ -12,7 +17,7 @@ export async function handleGet(
     return NextResponse.json(
       {
         data: null,
-        error: { code: "UNAUTHORIZED", message: "Not authenticated" },
+        error: { code: ERROR_CODES.UNAUTHORIZED, message: "Not authenticated" },
       },
       { status: 401 },
     );
@@ -36,7 +41,7 @@ export async function handlePost(
     return NextResponse.json(
       {
         data: null,
-        error: { code: "UNAUTHORIZED", message: "Not authenticated" },
+        error: { code: ERROR_CODES.UNAUTHORIZED, message: "Not authenticated" },
       },
       { status: 401 },
     );
@@ -49,7 +54,10 @@ export async function handlePost(
     return NextResponse.json(
       {
         data: null,
-        error: { code: "VALIDATION_ERROR", message: "Invalid JSON body" },
+        error: {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: "Invalid JSON body",
+        },
       },
       { status: 400 },
     );
@@ -62,7 +70,7 @@ export async function handlePost(
       {
         data: null,
         error: {
-          code: "VALIDATION_ERROR",
+          code: ERROR_CODES.VALIDATION_ERROR,
           message: parsed.error.issues
             .map((i: { message: string }) => i.message)
             .join(", "),

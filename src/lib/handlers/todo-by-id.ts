@@ -1,9 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateTodoSchema } from "@/lib/schemas";
-import { ApiResponse, TodoResponse, toTodoResponse } from "@/lib/types";
+import { updateTodoSchema, todoIdSchema } from "@/lib/schemas";
+import {
+  ApiResponse,
+  ERROR_CODES,
+  TodoResponse,
+  toTodoResponse,
+} from "@/lib/types";
 import type { RouteDeps } from "@/lib/route-deps";
 
 type TodoResponseSingle = ApiResponse<TodoResponse>;
+
+function validateId(id: string): NextResponse<TodoResponseSingle> | null {
+  const parsed = todoIdSchema.safeParse(id);
+  if (!parsed.success) {
+    return NextResponse.json(
+      {
+        data: null,
+        error: {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: "Invalid todo ID",
+        },
+      },
+      { status: 400 },
+    );
+  }
+  return null;
+}
 
 export async function handlePatch(
   deps: RouteDeps,
@@ -16,13 +38,16 @@ export async function handlePatch(
     return NextResponse.json(
       {
         data: null,
-        error: { code: "UNAUTHORIZED", message: "Not authenticated" },
+        error: { code: ERROR_CODES.UNAUTHORIZED, message: "Not authenticated" },
       },
       { status: 401 },
     );
   }
 
   const { id } = await params;
+  const idError = validateId(id);
+  if (idError) return idError;
+
   let body: unknown;
   try {
     body = await request.json();
@@ -30,7 +55,10 @@ export async function handlePatch(
     return NextResponse.json(
       {
         data: null,
-        error: { code: "VALIDATION_ERROR", message: "Invalid JSON body" },
+        error: {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: "Invalid JSON body",
+        },
       },
       { status: 400 },
     );
@@ -43,7 +71,7 @@ export async function handlePatch(
       {
         data: null,
         error: {
-          code: "VALIDATION_ERROR",
+          code: ERROR_CODES.VALIDATION_ERROR,
           message: parsed.error.issues
             .map((i: { message: string }) => i.message)
             .join(", "),
@@ -59,7 +87,7 @@ export async function handlePatch(
     return NextResponse.json(
       {
         data: null,
-        error: { code: "NOT_FOUND", message: "Todo not found" },
+        error: { code: ERROR_CODES.NOT_FOUND, message: "Todo not found" },
       },
       { status: 404 },
     );
@@ -79,20 +107,23 @@ export async function handleDelete(
     return NextResponse.json(
       {
         data: null,
-        error: { code: "UNAUTHORIZED", message: "Not authenticated" },
+        error: { code: ERROR_CODES.UNAUTHORIZED, message: "Not authenticated" },
       },
       { status: 401 },
     );
   }
 
   const { id } = await params;
+  const idError = validateId(id);
+  if (idError) return idError;
+
   const deleted = await deps.repo.delete(id, user.id);
 
   if (!deleted) {
     return NextResponse.json(
       {
         data: null,
-        error: { code: "NOT_FOUND", message: "Todo not found" },
+        error: { code: ERROR_CODES.NOT_FOUND, message: "Todo not found" },
       },
       { status: 404 },
     );

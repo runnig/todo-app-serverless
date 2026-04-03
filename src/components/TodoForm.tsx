@@ -25,10 +25,11 @@ export function TodoForm({ initial, onSubmit, onCancel }: TodoFormProps) {
     setLoading(true);
 
     try {
-      const data: CreateTodoInput = {
-        title,
-        description: description || undefined,
-      };
+      // TODO: consider if we can always return {title, description}
+      // even when description is an empty string
+      const data: CreateTodoInput = description
+        ? { title, description }
+        : { title };
 
       await onSubmit(data);
       if (!initial) {

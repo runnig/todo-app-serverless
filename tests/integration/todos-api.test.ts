@@ -1,36 +1,39 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import {
-  createTestDb,
+  getTestDb,
+  closeTestDb,
   setupTestUser,
   teardownTestUser,
   cleanTodos,
-  TODOS_API_USER_ID,
-  TODOS_API_USER_EMAIL,
+  createTestUser,
 } from "./helpers";
 import { todos } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 describe("Todo database operations", () => {
+  const testUser = createTestUser();
+
   beforeAll(async () => {
-    await setupTestUser(TODOS_API_USER_ID, TODOS_API_USER_EMAIL);
+    await setupTestUser(testUser.userId, testUser.email);
   });
 
   beforeEach(async () => {
-    await cleanTodos(TODOS_API_USER_ID);
+    await cleanTodos(testUser.userId);
   });
 
   afterAll(async () => {
-    await teardownTestUser(TODOS_API_USER_ID);
+    await teardownTestUser(testUser.userId);
+    await closeTestDb();
   });
 
   it("inserts and retrieves a todo", async () => {
-    const db = createTestDb();
+    const db = getTestDb();
 
     const inserted = (
       await db
         .insert(todos)
         .values({
-          userId: TODOS_API_USER_ID,
+          userId: testUser.userId,
           title: "DB test todo",
           description: "Test description",
           done: false,
@@ -39,7 +42,7 @@ describe("Todo database operations", () => {
     )[0]!;
 
     expect(inserted.title).toBe("DB test todo");
-    expect(inserted.userId).toBe(TODOS_API_USER_ID);
+    expect(inserted.userId).toBe(testUser.userId);
     expect(inserted.done).toBe(false);
 
     const retrieved = (
@@ -50,12 +53,12 @@ describe("Todo database operations", () => {
   });
 
   it("updates a todo", async () => {
-    const db = createTestDb();
+    const db = getTestDb();
 
     const inserted = (
       await db
         .insert(todos)
-        .values({ userId: TODOS_API_USER_ID, title: "Original" })
+        .values({ userId: testUser.userId, title: "Original" })
         .returning()
     )[0]!;
 
@@ -72,12 +75,12 @@ describe("Todo database operations", () => {
   });
 
   it("deletes a todo", async () => {
-    const db = createTestDb();
+    const db = getTestDb();
 
     const inserted = (
       await db
         .insert(todos)
-        .values({ userId: TODOS_API_USER_ID, title: "To delete" })
+        .values({ userId: testUser.userId, title: "To delete" })
         .returning()
     )[0]!;
 
@@ -92,17 +95,17 @@ describe("Todo database operations", () => {
   });
 
   it("only retrieves todos for a specific user", async () => {
-    const db = createTestDb();
+    const db = getTestDb();
 
     await db
       .insert(todos)
-      .values({ userId: TODOS_API_USER_ID, title: "User 1 todo" })
+      .values({ userId: testUser.userId, title: "User 1 todo" })
       .returning();
 
     const userTodos = await db
       .select()
       .from(todos)
-      .where(eq(todos.userId, TODOS_API_USER_ID));
+      .where(eq(todos.userId, testUser.userId));
 
     expect(userTodos).toHaveLength(1);
     expect(userTodos[0]!.title).toBe("User 1 todo");

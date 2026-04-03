@@ -3,47 +3,49 @@ import { DrizzleTodoRepository } from "@/lib/repositories/drizzle";
 import {
   setupTestUser,
   teardownTestUser,
-  DRIZZLE_REPO_USER_ID,
-  DRIZZLE_REPO_USER_EMAIL,
-  createTestDb,
+  getTestDb,
+  closeTestDb,
   cleanTodos,
+  createTestUser,
 } from "../helpers";
 
 describe("DrizzleTodoRepository", () => {
   let repo: DrizzleTodoRepository;
+  const testUser = createTestUser();
   const otherUserId = "88888888-8888-8888-8888-888888888888";
 
   beforeAll(async () => {
-    await setupTestUser(DRIZZLE_REPO_USER_ID, DRIZZLE_REPO_USER_EMAIL);
-    repo = new DrizzleTodoRepository(createTestDb());
+    await setupTestUser(testUser.userId, testUser.email);
+    repo = new DrizzleTodoRepository(getTestDb());
   });
 
   beforeEach(async () => {
-    await cleanTodos(DRIZZLE_REPO_USER_ID);
+    await cleanTodos(testUser.userId);
   });
 
   afterAll(async () => {
-    await teardownTestUser(DRIZZLE_REPO_USER_ID);
+    await teardownTestUser(testUser.userId);
+    await closeTestDb();
   });
 
   describe("create", () => {
     it("creates a todo in the database", async () => {
-      const todo = await repo.create(DRIZZLE_REPO_USER_ID, {
+      const todo = await repo.create(testUser.userId, {
         title: "Integration test todo",
       });
 
       expect(todo.id).toBeDefined();
-      expect(todo.userId).toBe(DRIZZLE_REPO_USER_ID);
+      expect(todo.userId).toBe(testUser.userId);
       expect(todo.title).toBe("Integration test todo");
       expect(todo.done).toBe(false);
 
-      const found = await repo.findById(todo.id, DRIZZLE_REPO_USER_ID);
+      const found = await repo.findById(todo.id, testUser.userId);
       expect(found).not.toBeNull();
       expect(found!.title).toBe("Integration test todo");
     });
 
     it("creates a todo with description", async () => {
-      const todo = await repo.create(DRIZZLE_REPO_USER_ID, {
+      const todo = await repo.create(testUser.userId, {
         title: "With description",
         description: "Some details",
       });
@@ -54,14 +56,14 @@ describe("DrizzleTodoRepository", () => {
 
   describe("findAll", () => {
     it("returns only todos for the given user", async () => {
-      const t1 = await repo.create(DRIZZLE_REPO_USER_ID, {
+      const t1 = await repo.create(testUser.userId, {
         title: "User test 1",
       });
-      const t2 = await repo.create(DRIZZLE_REPO_USER_ID, {
+      const t2 = await repo.create(testUser.userId, {
         title: "User test 2",
       });
 
-      const todos = await repo.findAll(DRIZZLE_REPO_USER_ID);
+      const todos = await repo.findAll(testUser.userId);
 
       expect(todos.length).toBeGreaterThanOrEqual(2);
       const todoIds = todos.map((t) => t.id);
@@ -72,7 +74,7 @@ describe("DrizzleTodoRepository", () => {
 
   describe("findById", () => {
     it("returns null for todo belonging to another user", async () => {
-      const todo = await repo.create(DRIZZLE_REPO_USER_ID, { title: "Mine" });
+      const todo = await repo.create(testUser.userId, { title: "Mine" });
       const found = await repo.findById(todo.id, otherUserId);
 
       expect(found).toBeNull();
@@ -81,7 +83,7 @@ describe("DrizzleTodoRepository", () => {
     it("returns null for nonexistent id", async () => {
       const found = await repo.findById(
         "00000000-0000-0000-0000-000000000000",
-        DRIZZLE_REPO_USER_ID,
+        testUser.userId,
       );
       expect(found).toBeNull();
     });
@@ -89,10 +91,10 @@ describe("DrizzleTodoRepository", () => {
 
   describe("update", () => {
     it("updates title and done status", async () => {
-      const created = await repo.create(DRIZZLE_REPO_USER_ID, {
+      const created = await repo.create(testUser.userId, {
         title: "Original",
       });
-      const updated = await repo.update(created.id, DRIZZLE_REPO_USER_ID, {
+      const updated = await repo.update(created.id, testUser.userId, {
         title: "Updated",
         done: true,
       });
@@ -106,7 +108,7 @@ describe("DrizzleTodoRepository", () => {
     });
 
     it("returns null if todo belongs to another user", async () => {
-      const created = await repo.create(DRIZZLE_REPO_USER_ID, {
+      const created = await repo.create(testUser.userId, {
         title: "Mine",
       });
       const updated = await repo.update(created.id, otherUserId, {
@@ -119,27 +121,27 @@ describe("DrizzleTodoRepository", () => {
 
   describe("delete", () => {
     it("deletes a todo and returns it", async () => {
-      const created = await repo.create(DRIZZLE_REPO_USER_ID, {
+      const created = await repo.create(testUser.userId, {
         title: "Delete me",
       });
-      const deleted = await repo.delete(created.id, DRIZZLE_REPO_USER_ID);
+      const deleted = await repo.delete(created.id, testUser.userId);
 
       expect(deleted).not.toBeNull();
       expect(deleted!.id).toBe(created.id);
 
-      const found = await repo.findById(created.id, DRIZZLE_REPO_USER_ID);
+      const found = await repo.findById(created.id, testUser.userId);
       expect(found).toBeNull();
     });
 
     it("returns null if todo belongs to another user", async () => {
-      const created = await repo.create(DRIZZLE_REPO_USER_ID, {
+      const created = await repo.create(testUser.userId, {
         title: "Mine",
       });
       const deleted = await repo.delete(created.id, otherUserId);
 
       expect(deleted).toBeNull();
 
-      const found = await repo.findById(created.id, DRIZZLE_REPO_USER_ID);
+      const found = await repo.findById(created.id, testUser.userId);
       expect(found).not.toBeNull();
     });
   });

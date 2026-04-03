@@ -10,12 +10,20 @@ import {
   Loader2Icon,
 } from "lucide-react";
 
-const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
+const Toaster = (props: ToasterProps) => {
+  const resolvedTheme = useTheme().resolvedTheme ?? "system";
 
+  // TODO: replace the "light", "dark", "system" with enum
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      {...(props as Record<string, unknown>)}
+      theme={
+        resolvedTheme === "light" ||
+        resolvedTheme === "dark" ||
+        resolvedTheme === "system"
+          ? resolvedTheme
+          : "system"
+      }
       className="toaster group"
       icons={{
         success: <CircleCheckIcon className="size-4" />,
@@ -37,7 +45,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
           toast: "cn-toast",
         },
       }}
-      {...props}
     />
   );
 };
